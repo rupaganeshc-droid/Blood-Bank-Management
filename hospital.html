@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hospital Staff Verification</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #ff6ec4, #7873f5);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+    }
+    .form-container {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 40px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(0,0,0,0.3);
+      width: 350px;
+      text-align: center;
+    }
+    .btn-verify {
+      background-color: #4b0082;
+      border: none;
+    }
+    .btn-verify:hover {
+      background-color: #36006e;
+    }
+    .message {
+      margin-top: 20px;
+      font-weight: 600;
+    }
+    input, select {
+      color: black;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>Verify Hospital Staff</h2>
+    <form id="staffForm" onsubmit="return verifyStaff(event)">
+      <div class="mb-3 text-start">
+        <label for="hospitalSelect" class="form-label">Select Hospital</label>
+        <select class="form-select" id="hospitalSelect" required>
+          <option value="" disabled selected>Select a hospital</option>
+          <option value="Hospital A">Hospital A</option>
+          <option value="Hospital B">Hospital B</option>
+          <option value="Hospital C">Hospital C</option>
+        </select>
+      </div>
+      <div class="mb-3 text-start">
+        <label for="staffNameInput" class="form-label">Staff Name</label>
+        <input type="text" class="form-control" id="staffNameInput" placeholder="Enter Staff Name" required />
+      </div>
+      <div class="mb-3 text-start">
+        <label for="staffId" class="form-label">Staff ID (Scan or Enter)</label>
+        <input type="text" class="form-control" id="staffId" placeholder="Enter or scan Staff ID" required />
+      </div>
+      <button type="submit" class="btn btn-verify w-100 text-white">Verify</button>
+    </form>
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    async function verifyStaff(event) {
+      event.preventDefault();
+
+      const hospital = document.getElementById('hospitalSelect').value;
+      const staffName = document.getElementById('staffNameInput').value.trim();
+      const staffId = document.getElementById('staffId').value.trim();
+      const messageDiv = document.getElementById('message');
+
+      try {
+        const response = await fetch('http://localhost:3000/verify', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ hospital, staffName, staffId })
+        });
+
+        if (!response.ok) throw new Error('Network error');
+
+        const data = await response.json();
+
+        if (data.verified) {
+          messageDiv.textContent = "Verified! Redirecting...";
+          messageDiv.style.color = "lightgreen";
+          setTimeout(() => {
+            window.location.href = "Verification.html";
+          }, 1200);
+        } else {
+          messageDiv.textContent = "Not Verified! Please check your inputs.";
+          messageDiv.style.color = "salmon";
+        }
+      } catch (error) {
+        messageDiv.textContent = "Error verifying staff. Try again later.";
+        messageDiv.style.color = "salmon";
+      }
+
+      return false;
+    }
+  </script>
+
+</body>
+</html>

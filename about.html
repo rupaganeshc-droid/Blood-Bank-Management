@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>About | Blood Bank</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet"/>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(to bottom right, #ffe6f0, #e6e9ff);
+    color: #333;
+    padding-top: 70px; /* ✅ accounts for fixed navbar height */
+  }
+
+  body.transition-start {
+    opacity: 0;
+    filter: blur(10px);
+    transition: all 0.6s ease;
+  }
+
+  body.transition-end {
+    opacity: 1;
+    filter: blur(0px);
+    transition: all 0.6s ease;
+  }
+
+  .navbar {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .navbar-brand {
+    font-weight: bold;
+    color: #6a00ff !important;
+  }
+
+  .nav-link {
+    position: relative;
+    color: #333 !important;
+    font-weight: 500;
+    margin-right: 20px;
+    transition: color 0.3s ease;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    width: 0;
+    height: 2px;
+    background: #6a00ff;
+    transition: width 0.3s ease;
+  }
+
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    width: 100%;
+  }
+
+  .nav-link.active {
+    color: #6a00ff !important;
+    font-weight: 600;
+  }
+
+  .about-section {
+    padding: 60px 20px;
+    max-width: 1000px;
+    margin: auto;
+  }
+
+  .about-section h1 {
+    font-size: 2.8rem;
+    font-weight: bold;
+    color: #6a00ff;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  .about-section p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 30px;
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+    color: #4a00e0;
+    margin-top: 40px;
+    margin-bottom: 20px;
+  }
+
+  ul {
+    list-style: disc;
+    padding-left: 20px;
+  }
+
+  ul li {
+    margin-bottom: 10px;
+  }
+
+  @media (max-width: 768px) {
+    .about-section h1 {
+      font-size: 2rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand" href="home.html">Blood Bank</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+<ul class="navbar-nav">
+  <li class="nav-item"><a class="nav-link" href="home.html">Home</a></li>
+  <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
+  <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+  <li class="nav-item student-hide"><a class="nav-link" href="donors.html">Donors</a></li>
+  <li class="nav-item student-hide"><a class="nav-link" href="request.html">Request</a></li>
+</ul>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- About Content -->
+  <section class="about-section mt-5 pt-5">
+    <h1>About Our Blood Bank</h1>
+    <p>
+      Our mission is to provide a reliable platform that bridges the gap between blood donors and those in urgent need. We simplify the donation and request process, ensuring timely help to save lives.
+    </p>
+
+    <h2 class="section-title">🩸 Who Can Donate Blood?</h2>
+    <ul>
+      <li>Age between 18 to 65 years</li>
+      <li>Minimum body weight of 50 kg</li>
+      <li>Hemoglobin count of at least 12.5 g/dL</li>
+      <li>Pulse rate between 60 to 100 without irregularities</li>
+      <li>Blood pressure within acceptable limits (e.g., 120/80 mmHg)</li>
+    </ul>
+
+    <h2 class="section-title">❌ Who Cannot Donate?</h2>
+    <ul>
+      <li>If you've had a recent infection or fever</li>
+      <li>If you've undergone surgery within the last 6 months</li>
+      <li>If you're pregnant or breastfeeding</li>
+      <li>If you've received a tattoo or piercing in the last 6 months</li>
+      <li>If you’re currently on antibiotics or steroids</li>
+    </ul>
+
+    <h2 class="section-title">💡 Why Donate Blood?</h2>
+    <ul>
+      <li>It saves lives during emergencies, surgeries, and cancer treatments</li>
+      <li>It helps your body by stimulating new blood cell production</li>
+      <li>Donating regularly can improve your health monitoring</li>
+      <li>You become part of a life-saving community</li>
+    </ul>
+
+    <p class="mt-4">Be a hero in someone’s life. Donate blood. Save lives.</p>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  
+
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const role = localStorage.getItem("role"); // "admin" or "student"
+      const navItems = document.querySelectorAll(".navbar-nav .nav-item");
+
+      if (navItems.length > 0) {
+        if (role === "student") {
+          navItems.forEach((item, index) => {
+            // show Home (0) and About (1), hide others
+            if (![0,1].includes(index)) item.style.display = "none";
+          });
+        } else if (role === "admin") {
+          navItems.forEach(item => item.style.display = "block");
+        } else {
+          window.location.href = "login.html"; // redirect if role missing
+        }
+      }
+    });
+ 
+</body>
+
+    // Blur + fade in on page load
+    document.body.classList.add('transition-start');
+    window.addEventListener('DOMContentLoaded', () => {
+      requestAnimationFrame(() => {
+        document.body.classList.remove('transition-start');
+        document.body.classList.add('transition-end');
+      });
+    });
+
+    // Blur + fade out before navigating
+    document.querySelectorAll('a').forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && !href.startsWith('#') && !href.startsWith('javascript')) {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          document.body.classList.remove('transition-end');
+          document.body.classList.add('transition-start');
+          setTimeout(() => {
+            window.location.href = this.href;
+          }, 600); // Match transition duration
+        });
+      }
+    });
+      const role = localStorage.getItem("role"); // role set during login
+
+  if (role === "student") {
+    document.querySelectorAll(".student-hide").forEach(item => {
+      item.style.display = "none";
+    });
+  }
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

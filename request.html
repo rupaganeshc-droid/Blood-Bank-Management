@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Request Blood | Blood Bank</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #ffe6f0, #e6e9ff);
+      margin: 0;
+      padding-top: 80px;
+    }
+    body.transition-start { opacity: 0; filter: blur(10px); transition: all 0.6s ease; }
+    body.transition-end { opacity: 1; filter: blur(0px); transition: all 0.6s ease; }
+
+    .navbar { background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .nav-link.active { color: #ff6ec4 !important; font-weight: bold; }
+
+    .form-container {
+      max-width: 600px; background: rgba(255,255,255,0.9);
+      margin: auto; padding: 40px; border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .form-title { text-align: center; margin-bottom: 25px; font-weight: bold; color: #6a00ff; }
+    .btn-purple { background-color: #6a00ff; color: white; border-radius: 25px; }
+    .btn-purple:hover { background-color: #4b00c9; }
+
+    .donor-results { max-width: 800px; margin: 40px auto; }
+    .donor-card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 15px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .donor-card h5 { color: #6a00ff; margin-bottom: 10px; }
+    .donor-card p { margin: 0; font-size: 0.95rem; }
+    .donor-map-btn { font-size: 1.2rem; cursor: pointer; }
+    #map { width: 100%; height: 400px; margin-top: 30px; border-radius:10px; }
+  </style>
+</head>
+<body class="transition-start">
+
+<nav class="navbar navbar-expand-lg navbar-light fixed-top">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand fw-bold" href="home.html">Blood Bank</a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="home.html">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+        <li class="nav-item student-hide"><a class="nav-link" href="donors.html">Donors</a></li>
+        <li class="nav-item student-hide"><a class="nav-link" href="request.html">Request</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="form-container">
+  <h2 class="form-title">Request for Blood</h2>
+  <form id="requestForm">
+    <div class="mb-3"><input type="text" id="name" class="form-control" placeholder="Full Name" required /></div>
+    <div class="mb-3"><input type="tel" id="phone" class="form-control" placeholder="Phone Number" required /></div>
+    <div class="mb-3"><input type="text" id="location" class="form-control" placeholder="Hospital / Location" required /></div>
+    <div class="mb-3">
+      <select id="bloodgrp" class="form-select" required>
+        <option value="" disabled selected>Select Blood Group</option>
+        <option>A+</option><option>A-</option>
+        <option>B+</option><option>B-</option>
+        <option>AB+</option><option>AB-</option>
+        <option>O+</option><option>O-</option>
+      </select>
+    </div>
+    <div class="mb-3"><textarea id="message" class="form-control" rows="3" placeholder="Additional Message (optional)"></textarea></div>
+    <div class="d-grid"><button type="submit" class="btn btn-purple">Submit Request</button></div>
+  </form>
+</div>
+
+<div class="donor-results" id="donorResults"></div>
+<div id="map"></div>
+
+<script>
+document.body.classList.remove("transition-start");
+document.body.classList.add("transition-end");
+
+// Hide student links if role is student
+const role = localStorage.getItem("role");
+if (role === "student") {
+  document.querySelectorAll(".student-hide").forEach(item => item.style.display = "none");
+}
+
+// Initialize Leaflet map
+const map = L.map('map').setView([20.5937, 78.9629], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let hospitalMarker = null;
+let donorMarkers = [];
+let selectedDonorMarker = null;
+let hospitalLine = null;
+
+// Get hospital coordinates via Nominatim
+async function getHospitalCoords(address) {
+  if (!address) return null;
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`, {
+      headers: {
+        "User-Agent": "BloodBankApp/1.0 (studentproject@example.com)",
+        "Accept-Language": "en"
+      }
+    });
+    const data = await res.json();
+    if (data.length === 0) return null; // silently return null if no location
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch (err) {
+    console.warn("Location fetch failed:", err);
+    return null;
+  }
+}
+
+
+// Haversine distance function
+function getDistanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+
+async function updateDonorMap() {
+  const group = document.getElementById("bloodgrp").value;
+  const hospitalAddr = document.getElementById("location").value.trim();
+  const resultDiv = document.getElementById("donorResults");
+
+  if (!hospitalAddr || !group) {
+    resultDiv.innerHTML = '';
+    if (hospitalMarker) map.removeLayer(hospitalMarker);
+    donorMarkers.forEach(m => map.removeLayer(m));
+    donorMarkers = [];
+    return;
+  }
+
+const hospitalCoords = await getHospitalCoords(hospitalAddr);
+
+if (!hospitalCoords) {
+  resultDiv.innerHTML = `<p class="text-warning text-center mt-4">Hospital location not found yet. Please enter full address.</p>`;
+  
+  if (hospitalMarker) map.removeLayer(hospitalMarker);
+  donorMarkers.forEach(m => map.removeLayer(m));
+  donorMarkers = [];
+  
+  return;
+}
+
+
+
+  // Add hospital marker
+  if (hospitalMarker) map.removeLayer(hospitalMarker);
+  hospitalMarker = L.marker([hospitalCoords.lat, hospitalCoords.lng], { title: "Hospital" })
+    .addTo(map)
+    .bindPopup("Hospital")
+    .openPopup();
+  map.setView([hospitalCoords.lat, hospitalCoords.lng], 10);
+
+  // Fetch donors
+  try {
+    const res = await fetch(`http://localhost:5000/donors-by-group/${group}`);
+    const data = await res.json();
+    donorMarkers.forEach(m => map.removeLayer(m));
+    donorMarkers = [];
+
+    if (data.success && data.donors.length > 0) {
+      data.donors.forEach(d => {
+        d.distance = getDistanceKm(hospitalCoords.lat, hospitalCoords.lng, d.latitude, d.longitude);
+      });
+      data.donors.sort((a, b) => a.distance - b.distance);
+
+      resultDiv.innerHTML = `<h5 class="text-center mt-4">Nearest Donors for ${group}</h5>` +
+        data.donors.map(d => `
+          <div class="donor-card">
+            <div>
+              <h5>${d.name} (${d.bloodgrp})</h5>
+              <p><strong>Reg No:</strong> ${d.regno}</p>
+              <p><strong>Dept:</strong> ${d.dept}</p>
+              <p><strong>Phone:</strong> ${d.phone}</p>
+              <p><strong>Distance:</strong> ${d.distance.toFixed(2)} km</p>
+            </div>
+            <div>
+              <button class="btn btn-outline-primary donor-map-btn" 
+                data-lat="${d.latitude}" data-lng="${d.longitude}" 
+                data-name="${d.name}" data-distance="${d.distance.toFixed(2)}">🗺️ Map</button>
+            </div>
+          </div>
+        `).join('');
+
+      // Add donor markers
+      data.donors.forEach(d => {
+        const marker = L.marker([d.latitude, d.longitude], { title: d.name }).addTo(map);
+        donorMarkers.push(marker);
+      });
+
+      // Button click events
+      document.querySelectorAll(".donor-map-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const lat = parseFloat(btn.dataset.lat);
+          const lng = parseFloat(btn.dataset.lng);
+          const name = btn.dataset.name;
+          const distance = btn.dataset.distance;
+
+          if (selectedDonorMarker) map.removeLayer(selectedDonorMarker);
+          if (hospitalLine) map.removeLayer(hospitalLine);
+
+          selectedDonorMarker = L.marker([lat, lng], { title: name })
+            .addTo(map)
+            .bindPopup(`<b>${name}</b><br>${distance} km from hospital`)
+            .openPopup();
+
+          hospitalLine = L.polyline([
+            [hospitalCoords.lat, hospitalCoords.lng],
+            [lat, lng]
+          ], { color: 'red', dashArray: '5,5' }).addTo(map);
+
+          map.setView([lat, lng], 12);
+        });
+      });
+    } else {
+      resultDiv.innerHTML = `<p class="text-danger text-center mt-4">No donors found for ${group}.</p>`;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Event listeners
+document.getElementById("bloodgrp").addEventListener("change", updateDonorMap);
+document.getElementById("location").addEventListener("input", updateDonorMap);
+
+// Submit blood request
+document.getElementById("requestForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById("name").value,
+    phone: document.getElementById("phone").value,
+    location: document.getElementById("location").value,
+    bloodgrp: document.getElementById("bloodgrp").value,
+    message: document.getElementById("message").value
+  };
+  try {
+    const res = await fetch("http://localhost:5000/submit-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    alert(data.message);
+    if (data.success) this.reset();
+  } catch (err) {
+    console.error(err);
+    alert("Request failed");
+  }
+});
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
